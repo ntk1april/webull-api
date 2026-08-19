@@ -13,6 +13,7 @@ WEBULL_APP_KEY: str = os.getenv("WEBULL_APP_KEY", "")
 WEBULL_APP_SECRET: str = os.getenv("WEBULL_APP_SECRET", "")
 WEBULL_REGION: str = os.getenv("WEBULL_REGION", "th")
 WEBULL_ENDPOINT: str = os.getenv("WEBULL_ENDPOINT", "api.webull.co.th")
+WEBULL_TOKEN_CONTENT: str = os.getenv("WEBULL_TOKEN_CONTENT", "")
 
 # ── API security ──────────────────────────────────────────────────────────────
 # Pass  X-API-Key: <value>  in every request header from your website.

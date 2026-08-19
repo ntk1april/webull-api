@@ -10,7 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.routers import market, trade
-from app.config import WEBULL_APP_KEY, API_SECRET_KEY
+import os
+from app.config import WEBULL_APP_KEY, API_SECRET_KEY, WEBULL_TOKEN_CONTENT
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -27,6 +28,15 @@ async def lifespan(app: FastAPI):
         logger.warning("WEBULL_APP_KEY env var is not set – API calls will fail!")
     if API_SECRET_KEY == "change-me-in-render-env":
         logger.warning("API_SECRET_KEY is still the default value – please change it in Render env vars!")
+        
+    if WEBULL_TOKEN_CONTENT:
+        os.makedirs("conf", exist_ok=True)
+        # Handle literal \n if they paste it on one line, else just write it
+        content = WEBULL_TOKEN_CONTENT.replace("\\n", "\n")
+        with open("conf/token.txt", "w", encoding="utf-8") as f:
+            f.write(content.strip() + "\n")
+        logger.info("Successfully injected WEBULL_TOKEN_CONTENT into conf/token.txt")
+        
     logger.info("Webull REST API starting up ✅")
     yield
     logger.info("Webull REST API shutting down")
