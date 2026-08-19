@@ -104,15 +104,3 @@ async def get_order_history(
         last_client_order_id=last_client_order_id,
     )
     return _ok(res)
-
-
-@router.get("/orders/{client_order_id}", summary="Order detail")
-async def get_order_detail(
-    client_order_id: str = Path(..., description="Client order ID (your reference)"),
-    account_id: str = Query(..., description="Account ID"),
-    _: str = Depends(require_api_key),
-):
-    """Returns detailed information for a single order."""
-    tc = get_trade_client()
-    res = tc.order_v2.get_order_detail(account_id=account_id, client_order_id=client_order_id)
-    return _ok(res)
