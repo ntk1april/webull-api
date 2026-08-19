@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+conf/token.txt
+webull_trade_sdk.log
+*.log
+.DS_Store

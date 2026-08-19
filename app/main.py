@@ -1,0 +1,76 @@
+"""
+FastAPI application entry-point.
+"""
+import logging
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.routers import market, trade
+from app.config import WEBULL_APP_KEY, API_SECRET_KEY
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s  %(message)s",
+)
+logger = logging.getLogger(__name__)
+
+
+# ── Lifespan (startup / shutdown) ─────────────────────────────────────────────
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    if not WEBULL_APP_KEY:
+        logger.warning("WEBULL_APP_KEY env var is not set – API calls will fail!")
+    if API_SECRET_KEY == "change-me-in-render-env":
+        logger.warning("API_SECRET_KEY is still the default value – please change it in Render env vars!")
+    logger.info("Webull REST API starting up ✅")
+    yield
+    logger.info("Webull REST API shutting down")
+
+
+# ── App ───────────────────────────────────────────────────────────────────────
+app = FastAPI(
+    title="Webull Market & Trade API",
+    description=(
+        "A REST proxy for the Webull OpenAPI SDK (Thailand region).\n\n"
+        "## Authentication\n"
+        "All endpoints require an **`X-API-Key`** header.\n\n"
+        "## Endpoints\n"
+        "- **Market Data** – quotes, candles, order book, instrument search\n"
+        "- **Trade** – accounts, positions, orders (list / place / cancel)"
+    ),
+    version="1.0.0",
+    lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc",
+)
+
+# CORS – allow your website domain (tighten in production)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://doi-again.vercel.app"],   # ← NO trailing slash – browsers omit it
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ── Routers ───────────────────────────────────────────────────────────────────
+app.include_router(market.router)
+app.include_router(trade.router)
+
+
+# ── Health check (no auth required) ──────────────────────────────────────────
+@app.get("/health", tags=["System"])
+async def health():
+    return {"status": "ok", "service": "webull-api"}
+
+
+@app.get("/", tags=["System"])
+async def root():
+    return {
+        "service": "Webull Market & Trade API",
+        "docs": "/docs",
+        "health": "/health",
+    }
