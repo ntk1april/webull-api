@@ -6,8 +6,6 @@ GET  /api/v1/trade/accounts/{id}/positions – open positions
 GET  /api/v1/trade/orders/open           – open/pending orders
 GET  /api/v1/trade/orders/history        – order history
 GET  /api/v1/trade/orders/{id}           – single order detail
-POST /api/v1/trade/orders               – place order(s)
-DELETE /api/v1/trade/orders/{id}        – cancel an order
 """
 from fastapi import APIRouter, Depends, Query, HTTPException, Path
 from pydantic import BaseModel
@@ -117,80 +115,4 @@ async def get_order_detail(
     """Returns detailed information for a single order."""
     tc = get_trade_client()
     res = tc.order_v2.get_order_detail(account_id=account_id, client_order_id=client_order_id)
-    return _ok(res)
-
-
-class SingleOrder(BaseModel):
-    """
-    Webull v2 order object.  See SDK docs for full field reference.
-    Required fields: symbol, market, side, order_type, qty.
-    """
-    symbol: str
-    market: str                         # e.g. "TH"
-    side: str                           # BUY | SELL
-    order_type: str                     # LMT | MKT | STP | STP_LMT
-    qty: str                            # quantity as string
-    limit_price: Optional[str] = None
-    stop_price: Optional[str] = None
-    tif: Optional[str] = "DAY"         # DAY | GTC | IOC | FOK
-    client_order_id: Optional[str] = None
-    extra: Optional[Dict[str, Any]] = None   # pass-through for any other fields
-
-
-class PlaceOrderRequest(BaseModel):
-    account_id: str
-    orders: List[SingleOrder]
-    client_combo_order_id: Optional[str] = None
-
-
-@router.post("/orders", summary="Place one or more orders", status_code=201)
-async def place_order(
-    body: PlaceOrderRequest,
-    _: str = Depends(require_api_key),
-):
-    """
-    Places one or more stock orders using the Webull v2 API.
-
-    Each order in `orders` maps to a Webull `new_order` dict.
-    The `market` field sets the header category (e.g. `market: "TH"` → category `TH_STOCK`).
-    """
-    tc = get_trade_client()
-
-    new_orders = []
-    for o in body.orders:
-        order_dict: Dict[str, Any] = {
-            "symbol": o.symbol,
-            "market": o.market,
-            "side": o.side,
-            "order_type": o.order_type,
-            "qty": o.qty,
-            "tif": o.tif,
-        }
-        if o.limit_price is not None:
-            order_dict["limit_price"] = o.limit_price
-        if o.stop_price is not None:
-            order_dict["stop_price"] = o.stop_price
-        if o.client_order_id is not None:
-            order_dict["client_order_id"] = o.client_order_id
-        if o.extra:
-            order_dict.update(o.extra)
-        new_orders.append(order_dict)
-
-    res = tc.order_v2.place_order(
-        account_id=body.account_id,
-        new_orders=new_orders,
-        client_combo_order_id=body.client_combo_order_id,
-    )
-    return _ok(res)
-
-
-@router.delete("/orders/{client_order_id}", summary="Cancel an order")
-async def cancel_order(
-    client_order_id: str = Path(..., description="Client order ID to cancel"),
-    account_id: str = Query(..., description="Account ID that owns the order"),
-    _: str = Depends(require_api_key),
-):
-    """Cancels a pending order by client_order_id."""
-    tc = get_trade_client()
-    res = tc.order_v2.cancel_order(account_id=account_id, client_order_id=client_order_id)
     return _ok(res)

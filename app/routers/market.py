@@ -53,9 +53,9 @@ async def get_snapshot(
 
 @router.get("/bars", summary="OHLCV historical candlestick bars")
 async def get_history_bars(
-    symbol: str = Query(..., description="Ticker symbol, e.g. PTT"),
-    category: str = Query("TH_STOCK", description="Security category, e.g. TH_STOCK, US_STOCK"),
-    timespan: str = Query("d1", description="Bar size: m1 m5 m15 m30 h1 h2 h4 d1 w1 mn1"),
+    symbol: str = Query(..., description="Ticker symbol, e.g. GOOG"),
+    category: str = Query("US_STOCK", description="Security category, e.g. TH_STOCK, US_STOCK"),
+    timespan: str = Query("D", description="Bar size: M1, M5, M15, M30, M60, M120, M240, D, W, M, Y"),
     count: int = Query(200, ge=1, le=1200, description="Number of bars"),
     _: str = Depends(require_api_key),
 ):

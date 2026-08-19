@@ -51,7 +51,7 @@ app = FastAPI(
         "All endpoints require an **`X-API-Key`** header.\n\n"
         "## Endpoints\n"
         "- **Market Data** – quotes, candles, order book, instrument search\n"
-        "- **Trade** – accounts, positions, orders (list / place / cancel)"
+        "- **Trade** – accounts, positions, order history"
     ),
     version="1.0.0",
     lifespan=lifespan,
