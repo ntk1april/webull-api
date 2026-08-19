@@ -1,8 +1,12 @@
 """
 Configuration – all secrets come from environment variables.
-Set these in Render.com → Environment tab.
+• Local dev:  put values in .env (auto-loaded below, never committed to git)
+• Render.com: set them in the Environment tab
 """
 import os
+from dotenv import load_dotenv
+
+load_dotenv()  # reads .env file if present; no-op in production where real env vars are set
 
 # ── Webull credentials ────────────────────────────────────────────────────────
 WEBULL_APP_KEY: str = os.getenv("WEBULL_APP_KEY", "")
