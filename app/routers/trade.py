@@ -23,7 +23,11 @@ def _ok(res):
     if res.status_code != 200:
         raise HTTPException(
             status_code=502,
-            detail={"webull_status": res.status_code, "body": res.text},
+            detail={
+                "error": "Webull API returned an error",
+                "webull_status": res.status_code,
+                "webull_body": res.text,
+            },
         )
     return res.json()
 

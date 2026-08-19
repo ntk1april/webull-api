@@ -5,7 +5,9 @@ GET /api/v1/market/bars              – OHLCV historical bars
 GET /api/v1/market/quotes            – Level-2 order book quotes
 GET /api/v1/market/tick              – tick-by-tick transactions
 GET /api/v1/market/instruments       – instrument search
+GET /api/v1/market/debug             – test Webull connection and show exact error
 """
+import traceback
 from fastapi import APIRouter, Depends, Query, HTTPException
 from typing import Optional
 
@@ -16,11 +18,15 @@ router = APIRouter(prefix="/api/v1/market", tags=["Market Data"])
 
 
 def _ok(res):
-    """Raise HTTP 502 if the upstream Webull call failed."""
+    """Raise HTTP 502 with full Webull error detail if the call failed."""
     if res.status_code != 200:
         raise HTTPException(
             status_code=502,
-            detail={"webull_status": res.status_code, "body": res.text},
+            detail={
+                "error": "Webull API returned an error",
+                "webull_status": res.status_code,
+                "webull_body": res.text,
+            },
         )
     return res.json()
 
@@ -109,3 +115,31 @@ async def get_instruments(
     symbol_list = [s.strip() for s in symbols.split(",") if s.strip()]
     res = dc.instrument.get_instrument(symbols=symbol_list, category=category)
     return _ok(res)
+
+
+@router.get("/debug", summary="Debug: test Webull connection", tags=["Debug"])
+async def debug_connection(
+    symbol: str = Query("PTT", description="Symbol to test with"),
+    category: str = Query("TH_STOCK", description="Category to test with"),
+    _: str = Depends(require_api_key),
+):
+    """
+    Tests the Webull SDK connection and returns the raw response or full error detail.
+    Use this endpoint first in Postman to diagnose 500/502 errors.
+    """
+    result = {"symbol": symbol, "category": category}
+    try:
+        dc = get_data_client()
+        res = dc.market_data.get_snapshot(
+            symbols=[symbol],
+            category=category,
+        )
+        result["webull_status"] = res.status_code
+        result["webull_body"] = res.json() if res.status_code == 200 else res.text
+        result["success"] = res.status_code == 200
+    except Exception as e:
+        result["success"] = False
+        result["exception_type"] = type(e).__name__
+        result["exception_message"] = str(e)
+        result["traceback"] = traceback.format_exc()
+    return result

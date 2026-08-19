@@ -2,10 +2,12 @@
 FastAPI application entry-point.
 """
 import logging
+import traceback
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.routers import market, trade
 from app.config import WEBULL_APP_KEY, API_SECRET_KEY
@@ -59,6 +61,21 @@ app.add_middleware(
 # ── Routers ───────────────────────────────────────────────────────────────────
 app.include_router(market.router)
 app.include_router(trade.router)
+
+
+# ── Global exception handler (turns 500 crashes into readable JSON) ───────────
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error("Unhandled exception on %s: %s", request.url, exc, exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "Internal server error",
+            "exception_type": type(exc).__name__,
+            "exception_message": str(exc),
+            "path": str(request.url),
+        },
+    )
 
 
 # ── Health check (no auth required) ──────────────────────────────────────────
